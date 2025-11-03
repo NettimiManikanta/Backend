@@ -9,15 +9,28 @@ const cors = require('cors');
 // ✅ Initialize express app
 const app = express();
 
-// ✅ Configure CORS for both Netlify and local development
+// ✅ Configure CORS (allow Netlify + local dev)
 app.use(
   cors({
-    origin: [
-      "https://6908b474f5c18e306ce912e5--college-id.netlify.app", // 🔗 Your Netlify frontend URL
-      "http://localhost:4200" // local Angular app
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+    origin: (origin, callback) => {
+      // List allowed origins (your production Netlify domain + localhost)
+      const allowedOrigins = [
+        'http://localhost:4200',
+        'https://college-id.netlify.app'
+      ];
+
+      // Allow any Netlify preview subdomain (e.g., 6908b474f5c18e306ce912e5--college-id.netlify.app)
+      const netlifyPreview = /\.netlify\.app$/;
+
+      if (!origin || allowedOrigins.includes(origin) || netlifyPreview.test(origin)) {
+        callback(null, true);
+      } else {
+        console.log('❌ Blocked by CORS:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
   })
 );
 
@@ -54,7 +67,7 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model("Student", studentSchema);
 
-// ✅ Helper Functions
+// ✅ Helper functions
 function genRoll(joinYear) {
   const jy = String(joinYear).slice(-2);
   const num = Math.floor(1000 + Math.random() * 9000);
@@ -73,12 +86,12 @@ function genUnique(name) {
   return `BVC${initials}${t}${r}`;
 }
 
-// ✅ Routes
+// ✅ Test route
 app.get("/", (req, res) => {
-  res.send("✅ College ID Backend Running on Render Successfully!");
+  res.send("✅ College ID Backend Running Successfully on Render!");
 });
 
-// Create a new student
+// ✅ Create new student
 app.post("/api/students", async (req, res) => {
   try {
     const { name, fatherName, dob, joinYear, roll, address } = req.body;
@@ -95,7 +108,7 @@ app.post("/api/students", async (req, res) => {
       roll: finalRoll,
       expiryYear: expiry,
       address,
-      uniqueCode
+      uniqueCode,
     });
 
     await student.save();
@@ -106,7 +119,7 @@ app.post("/api/students", async (req, res) => {
   }
 });
 
-// Get all students
+// ✅ Get all students
 app.get("/api/students", async (req, res) => {
   try {
     const list = await Student.find().sort({ createdAt: -1 });
